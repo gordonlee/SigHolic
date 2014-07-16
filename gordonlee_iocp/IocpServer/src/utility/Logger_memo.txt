@@ -1,0 +1,9 @@
+
+- LOG4CPLUS open source libraries
+
+Home: 
+http://sourceforge.net/p/log4cplus/wiki/Home/
+
+sample:
+http://log4cplus.sourceforge.net/codeexamples.html
+

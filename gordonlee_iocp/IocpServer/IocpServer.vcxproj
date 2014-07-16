@@ -1,0 +1,190 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\iocp\Iocp.cpp" />
+    <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\network\network.cpp" />
+    <ClCompile Include="src\socket\TcpClient.cpp" />
+    <ClCompile Include="src\socket\TcpServer.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\Libraries\log4cplus\appender.h" />
+    <ClInclude Include="..\Libraries\log4cplus\asyncappender.h" />
+    <ClInclude Include="..\Libraries\log4cplus\boost\deviceappender.hxx" />
+    <ClInclude Include="..\Libraries\log4cplus\clfsappender.h" />
+    <ClInclude Include="..\Libraries\log4cplus\clogger.h" />
+    <ClInclude Include="..\Libraries\log4cplus\config.hxx" />
+    <ClInclude Include="..\Libraries\log4cplus\configurator.h" />
+    <ClInclude Include="..\Libraries\log4cplus\config\macosx.h" />
+    <ClInclude Include="..\Libraries\log4cplus\config\win32.h" />
+    <ClInclude Include="..\Libraries\log4cplus\config\windowsh-inc.h" />
+    <ClInclude Include="..\Libraries\log4cplus\consoleappender.h" />
+    <ClInclude Include="..\Libraries\log4cplus\fileappender.h" />
+    <ClInclude Include="..\Libraries\log4cplus\fstreams.h" />
+    <ClInclude Include="..\Libraries\log4cplus\helpers\appenderattachableimpl.h" />
+    <ClInclude Include="..\Libraries\log4cplus\helpers\fileinfo.h" />
+    <ClInclude Include="..\Libraries\log4cplus\helpers\lockfile.h" />
+    <ClInclude Include="..\Libraries\log4cplus\helpers\loglog.h" />
+    <ClInclude Include="..\Libraries\log4cplus\helpers\logloguser.h" />
+    <ClInclude Include="..\Libraries\log4cplus\helpers\pointer.h" />
+    <ClInclude Include="..\Libraries\log4cplus\helpers\property.h" />
+    <ClInclude Include="..\Libraries\log4cplus\helpers\queue.h" />
+    <ClInclude Include="..\Libraries\log4cplus\helpers\sleep.h" />
+    <ClInclude Include="..\Libraries\log4cplus\helpers\snprintf.h" />
+    <ClInclude Include="..\Libraries\log4cplus\helpers\socket.h" />
+    <ClInclude Include="..\Libraries\log4cplus\helpers\socketbuffer.h" />
+    <ClInclude Include="..\Libraries\log4cplus\helpers\stringhelper.h" />
+    <ClInclude Include="..\Libraries\log4cplus\helpers\thread-config.h" />
+    <ClInclude Include="..\Libraries\log4cplus\helpers\timehelper.h" />
+    <ClInclude Include="..\Libraries\log4cplus\hierarchy.h" />
+    <ClInclude Include="..\Libraries\log4cplus\hierarchylocker.h" />
+    <ClInclude Include="..\Libraries\log4cplus\internal\cygwin-win32.h" />
+    <ClInclude Include="..\Libraries\log4cplus\internal\env.h" />
+    <ClInclude Include="..\Libraries\log4cplus\internal\internal.h" />
+    <ClInclude Include="..\Libraries\log4cplus\internal\socket.h" />
+    <ClInclude Include="..\Libraries\log4cplus\layout.h" />
+    <ClInclude Include="..\Libraries\log4cplus\log4judpappender.h" />
+    <ClInclude Include="..\Libraries\log4cplus\logger.h" />
+    <ClInclude Include="..\Libraries\log4cplus\loggingmacros.h" />
+    <ClInclude Include="..\Libraries\log4cplus\loglevel.h" />
+    <ClInclude Include="..\Libraries\log4cplus\mdc.h" />
+    <ClInclude Include="..\Libraries\log4cplus\ndc.h" />
+    <ClInclude Include="..\Libraries\log4cplus\nteventlogappender.h" />
+    <ClInclude Include="..\Libraries\log4cplus\nullappender.h" />
+    <ClInclude Include="..\Libraries\log4cplus\qt4debugappender.h" />
+    <ClInclude Include="..\Libraries\log4cplus\socketappender.h" />
+    <ClInclude Include="..\Libraries\log4cplus\spi\appenderattachable.h" />
+    <ClInclude Include="..\Libraries\log4cplus\spi\factory.h" />
+    <ClInclude Include="..\Libraries\log4cplus\spi\filter.h" />
+    <ClInclude Include="..\Libraries\log4cplus\spi\loggerfactory.h" />
+    <ClInclude Include="..\Libraries\log4cplus\spi\loggerimpl.h" />
+    <ClInclude Include="..\Libraries\log4cplus\spi\loggingevent.h" />
+    <ClInclude Include="..\Libraries\log4cplus\spi\objectregistry.h" />
+    <ClInclude Include="..\Libraries\log4cplus\spi\rootlogger.h" />
+    <ClInclude Include="..\Libraries\log4cplus\streams.h" />
+    <ClInclude Include="..\Libraries\log4cplus\syslogappender.h" />
+    <ClInclude Include="..\Libraries\log4cplus\tchar.h" />
+    <ClInclude Include="..\Libraries\log4cplus\thread\impl\syncprims-impl.h" />
+    <ClInclude Include="..\Libraries\log4cplus\thread\impl\syncprims-pmsm.h" />
+    <ClInclude Include="..\Libraries\log4cplus\thread\impl\syncprims-pthreads.h" />
+    <ClInclude Include="..\Libraries\log4cplus\thread\impl\syncprims-win32.h" />
+    <ClInclude Include="..\Libraries\log4cplus\thread\impl\threads-impl.h" />
+    <ClInclude Include="..\Libraries\log4cplus\thread\impl\tls.h" />
+    <ClInclude Include="..\Libraries\log4cplus\thread\syncprims-pub-impl.h" />
+    <ClInclude Include="..\Libraries\log4cplus\thread\syncprims.h" />
+    <ClInclude Include="..\Libraries\log4cplus\thread\threads.h" />
+    <ClInclude Include="..\Libraries\log4cplus\tracelogger.h" />
+    <ClInclude Include="..\Libraries\log4cplus\tstring.h" />
+    <ClInclude Include="..\Libraries\log4cplus\version.h" />
+    <ClInclude Include="..\Libraries\log4cplus\win32consoleappender.h" />
+    <ClInclude Include="..\Libraries\log4cplus\win32debugappender.h" />
+    <ClInclude Include="src\common_header\base_header.h" />
+    <ClInclude Include="src\iocp\Iocp.h" />
+    <ClInclude Include="src\iocp\iocp_structure.h" />
+    <ClInclude Include="src\network\network.h" />
+    <ClInclude Include="src\packet\Packet.h" />
+    <ClInclude Include="src\socket\TcpClient.h" />
+    <ClInclude Include="src\socket\TcpServer.h" />
+    <ClInclude Include="src\socket\TcpSocket.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="src\utility\AutoLock.h" />
+    <ClInclude Include="src\utility\Buffer.h" />
+    <ClInclude Include="src\utility\ConsoleLogger.h" />
+    <ClInclude Include="src\utility\ILogger.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="..\Libraries\log4cplusD.lib" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\Libraries\log4cplus\config.h.cmake.in" />
+    <None Include="..\Libraries\log4cplus\config.h.in" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="src\utility\Logger_memo.txt" />
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{6BCE010B-7A79-41B6-A678-F4060A6038FD}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>IocpServer</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+    <IntDir>$(Configuration)\..\..\_intermediate\IocpServer\</IntDir>
+    <OutDir>$(SolutionDir)\Bin\$(Configuration)\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
+      <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>.\src;..\Libraries</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies);ws2_32.lib;mswsock.lib</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck>true</SDLCheck>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
