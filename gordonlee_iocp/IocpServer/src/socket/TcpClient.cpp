@@ -50,7 +50,7 @@ int TcpClient::Send(byte* _buffer, int _sendBytes) {
     return ::send(m_Socket, m_pSendBuffer->GetPtr(), m_pSendBuffer->GetLength(), 0);
 }
 
-int TcpClient::Send(Buffer* _buffer, int _sendBytes) {
+int TcpClient::Send(IBuffer* _buffer, int _sendBytes) {
     m_IoState = IO_SENDING;
 	if (_buffer && _sendBytes > 0) {
         return ::send(m_Socket, _buffer->GetPtr(), _sendBytes, 0);
@@ -93,11 +93,11 @@ const SOCKET TcpClient::GetSocket() const {
 	return m_Socket;
 }
 
-const Buffer* TcpClient::GetRecvBuffer() {
+const IBuffer* TcpClient::GetRecvBuffer() {
     return m_pRecvBuffer;
 }
 
-const Buffer* TcpClient::GetSendBuffer() {
+const IBuffer* TcpClient::GetSendBuffer() {
     return m_pSendBuffer;
 }
 
@@ -226,14 +226,21 @@ void TcpClient::OnSend(unsigned long transferred) {
 
 
 //// private functions
-void TcpClient::CreateBuffers(void) {
+bool TcpClient::CreateBuffers(void) {
     if (m_pRecvBuffer || m_pSendBuffer) {
         RemoveBuffers();
     }
 
-    // TODO: error handling, when allocation would be failed.
-    m_pRecvBuffer = new Buffer();
-    m_pSendBuffer = new Buffer();
+	m_pRecvBuffer = BufferFactory::CreateBuffer(PULLED_BUFFER);
+	if (m_pRecvBuffer == NULL) {
+		return false;
+	}
+	m_pSendBuffer = BufferFactory::CreateBuffer(PULLED_BUFFER);
+	if (m_pSendBuffer == NULL) {
+		return false;
+	}
+
+	return true;
 }
 
 void TcpClient::RemoveBuffers(void) {

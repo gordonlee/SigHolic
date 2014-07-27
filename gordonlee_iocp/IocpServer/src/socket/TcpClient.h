@@ -11,7 +11,7 @@ enum IO_STATE {
 };
 
 struct Packet;
-class Buffer;
+class IBuffer;
 
 class TcpClient {
 public:
@@ -23,7 +23,7 @@ public:
 	
 	int SendAsync(void);
     int Send(byte* _buffer, int _sendBytes);
-	int Send(Buffer* _buffer, int _sendBytes);
+	int Send(IBuffer* _buffer, int _sendBytes);
 
 	int RecvAsync(const LPOVERLAPPED _overlapped);
 	void TryProcessPacket();
@@ -32,8 +32,8 @@ public:
 
 public:
     const SOCKET GetSocket() const ;
-    const Buffer* GetRecvBuffer();
-    const Buffer* GetSendBuffer();
+	const IBuffer* GetRecvBuffer();
+	const IBuffer* GetSendBuffer();
     const IO_STATE GetIoState() const ;
 
     // handling events
@@ -42,7 +42,7 @@ public:
      void OnSend(unsigned long transferred);
 
  private:
-     void CreateBuffers(void);
+     bool CreateBuffers(void);
      void RemoveBuffers(void);
 	 void ProcessPacket(Packet* packet);
 
@@ -53,8 +53,8 @@ public:
     IO_STATE m_IoState;
     
     // MEMO: input from async WorkerThread, output to OnReceived events
-    Buffer* m_pRecvBuffer;
-    Buffer* m_pSendBuffer;
+    IBuffer* m_pRecvBuffer;
+    IBuffer* m_pSendBuffer;
 
     unsigned long m_RecvBytes;
     unsigned long m_SendBytes;
