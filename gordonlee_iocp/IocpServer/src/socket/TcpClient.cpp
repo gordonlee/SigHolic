@@ -2,6 +2,7 @@
 #include "./TcpClient.h"
 
 #include "utility/buffer.h"
+#include "packet/Packet.h"
 
 TcpClient::TcpClient(void) 
 : m_Socket(0)
@@ -64,8 +65,8 @@ int TcpClient::RecvAsync(const LPOVERLAPPED _overlapped) {
 	DWORD flags = 0;
 	
     WSABUF wsaBuf;
-	wsaBuf.buf = m_pRecvBuffer->GetPtr();
-	wsaBuf.len = BUFFER_SIZE;
+	wsaBuf.buf = m_pRecvBuffer->GetEmptyPtr();
+	wsaBuf.len = m_pRecvBuffer->GetEmptyLength();
 
 	int result = ::WSARecv(
 		m_Socket,
@@ -103,37 +104,124 @@ const Buffer* TcpClient::GetSendBuffer() {
 const IO_STATE TcpClient::GetIoState() const {
     return m_IoState;
 }
+
 //// handling events
-// FIXME: packet process flow
-const int packet_header_length = 2; 
+const int packet_length_header = 2; 
 void TcpClient::OnReceived(unsigned long transferred) {
     m_RecvBytes += transferred;
-    
+	m_pRecvBuffer->ForceAddLength(transferred);
+	
+	/*
     printf("[%s:%d] RecvData : %s\n",
         inet_ntoa(m_SocketAddr.sin_addr),
         ntohs(m_SocketAddr.sin_port),
         m_pRecvBuffer->GetPtr());
+	*/
 
-    // process pakcet
-    int transferredSendData = Send(reinterpret_cast<byte*>(m_pRecvBuffer->GetPtr()), m_RecvBytes);
-    if (transferredSendData < 0) {
-        Close(true);
-        return;
-    }
-    OnSend(transferredSendData);
+	TryProcessPacket();
+}
 
-    // TODO: 아래 두 변수 가능하면 나중에 묶을 것.
-    m_pRecvBuffer->Clear();
-    m_RecvBytes = 0;
+const int packet_header_size = sizeof(PacketHeader);
 
-    m_IoState = IO_CONNECTED;
+void TcpClient::TryProcessPacket() {
+	
+	if (m_RecvBytes <= 0) {
+		// unexpected value. do close
+		Close(true);
+		return;
+	}
+	
+	if (m_RecvBytes > 0 && m_RecvBytes < packet_length_header) {
+		// TODO: try recv again
+		m_IoState = IO_CONNECTED;
+		return;
+	}
+	
+	// process packet
+	Packet* packetPointer = reinterpret_cast<Packet *>(m_pRecvBuffer->GetPtr());
+
+	while (packetPointer->dataSize_ > 0 &&
+		m_RecvBytes >= packetPointer->dataSize_ + packet_header_size)
+	{
+		byte packet[BUFFER_SIZE] = { 0, };
+		::memset(packet, 0, BUFFER_SIZE);
+		m_pRecvBuffer->Read(packetPointer->dataSize_ + packet_header_size, (char*)packet, BUFFER_SIZE);
+		ProcessPacket((Packet*)packet);
+
+		// FIXME: m_RecvBytes 가 음수로 떨어지는 케이스가 있는 것 같다.
+		if (packetPointer->dataSize_ + packet_header_size > m_RecvBytes)
+		{
+			// 상태이상으로 판정하여 끊어줌.
+			Close(true);
+			return;
+		}
+		m_RecvBytes -= (packetPointer->dataSize_ + packet_header_size);
+
+		if (m_pRecvBuffer->GetLength() > packet_length_header) {
+			packetPointer = (Packet*)m_pRecvBuffer->GetPtr();
+		}
+		else {
+			break;
+		}
+	}
+}
+
+void TcpClient::ProcessPacket(Packet* packet) {
+
+	/// Verify CheckSum
+	if (packet->checkSum_ == 0x55) {
+
+	}
+	else {
+		// Unknown checksum
+		Close(true);
+	}
+
+	/// Verify Flag
+	if (packet->flag_ == 0x01) {	// send as echo
+		PacketData* dataSection = (PacketData*)packet->data_;
+		/*
+		printf("[%s:%d] ProcessPacket [%d:%d:%d][%d:%d:%d][%s]\n",
+			inet_ntoa(m_SocketAddr.sin_addr),
+			ntohs(m_SocketAddr.sin_port),
+			packet->dataSize_,
+			packet->flag_, 
+			packet->checkSum_,
+			dataSection->packetId_,
+			dataSection->clientId_,
+			dataSection->sentTime_,
+			dataSection->data_);
+		*/
+		printf("[%s:%d] ProcessPacket [%d:%d:%d][%d:%d:%d]\n",
+			inet_ntoa(m_SocketAddr.sin_addr),
+			ntohs(m_SocketAddr.sin_port),
+			packet->dataSize_,
+			packet->flag_,
+			packet->checkSum_,
+			dataSection->packetId_,
+			dataSection->clientId_,
+			dataSection->sentTime_);
+		
+		int transferredSendData = Send(reinterpret_cast<byte*>(packet), packet->dataSize_ + 4);
+		if (transferredSendData < 0) {
+			Close(true);
+			return;
+		}
+		OnSend(transferredSendData);
+	}
+	else if (packet->flag_ == 0x02) { // send as broadcast to all sessions
+
+	}
+	else {
+		// Unknown flag
+		Close(true);
+	}
 }
 
 void TcpClient::OnSend(unsigned long transferred) {
     m_IoState = IO_CONNECTED;
     
     m_pSendBuffer->Clear();
-    m_RecvBytes = 0;
 }
 
 

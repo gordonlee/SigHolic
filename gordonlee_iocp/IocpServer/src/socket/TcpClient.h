@@ -10,6 +10,7 @@ enum IO_STATE {
     IO_SENDING,
 };
 
+struct Packet;
 class Buffer;
 
 class TcpClient {
@@ -25,6 +26,7 @@ public:
 	int Send(Buffer* _buffer, int _sendBytes);
 
 	int RecvAsync(const LPOVERLAPPED _overlapped);
+	void TryProcessPacket();
 	
 	void Close(bool isForce);
 
@@ -42,6 +44,7 @@ public:
  private:
      void CreateBuffers(void);
      void RemoveBuffers(void);
+	 void ProcessPacket(Packet* packet);
 
  private:
 	SOCKET m_Socket;
