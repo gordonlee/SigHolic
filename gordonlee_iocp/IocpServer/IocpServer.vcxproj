@@ -91,6 +91,7 @@
     <ClInclude Include="src\common_header\base_header.h" />
     <ClInclude Include="src\iocp\Iocp.h" />
     <ClInclude Include="src\iocp\iocp_structure.h" />
+    <ClInclude Include="src\iocp\OverlappedStructure.h" />
     <ClInclude Include="src\network\network.h" />
     <ClInclude Include="src\packet\Packet.h" />
     <ClInclude Include="src\socket\TcpClient.h" />

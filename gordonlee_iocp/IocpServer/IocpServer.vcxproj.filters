@@ -298,6 +298,9 @@
     <ClInclude Include="src\packet\Packet.h">
       <Filter>packet</Filter>
     </ClInclude>
+    <ClInclude Include="src\iocp\OverlappedStructure.h">
+      <Filter>iocp</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Library Include="..\Libraries\log4cplusD.lib">
