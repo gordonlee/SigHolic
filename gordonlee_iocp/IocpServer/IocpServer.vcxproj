@@ -16,6 +16,7 @@
     <ClCompile Include="src\network\network.cpp" />
     <ClCompile Include="src\socket\TcpClient.cpp" />
     <ClCompile Include="src\socket\TcpServer.cpp" />
+    <ClCompile Include="src\socket\TcpSessionManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Libraries\log4cplus\appender.h" />
@@ -96,6 +97,7 @@
     <ClInclude Include="src\packet\Packet.h" />
     <ClInclude Include="src\socket\TcpClient.h" />
     <ClInclude Include="src\socket\TcpServer.h" />
+    <ClInclude Include="src\socket\TcpSessionManager.h" />
     <ClInclude Include="src\socket\TcpSocket.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
     </ClInclude>

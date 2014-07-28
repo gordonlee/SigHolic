@@ -1,7 +1,7 @@
 
 #include "network.h"
 
-
+#include "socket/TcpSessionManager.h"
 
 namespace {
 	// FIXME: replace this function to log class
@@ -82,12 +82,13 @@ unsigned int __stdcall WorkerThread(LPVOID lpParam) {
 				inet_ntoa(clientaddr.sin_addr), ntohs(clientaddr.sin_port));
 
 			data->Socket.Close(false);
+			TcpSessionManager.RemoveTcpClient(&(data->Socket));
 			//FIXME: delete data at here is dangerous!
 			delete data;
 			continue;
 		}
 		else if (data) {
-            if (cbTransferred > 0 && data->Socket.GetIoState() == IO_READING) {
+            if (cbTransferred > 0 && data->Socket.GetRecvIoState() == IO_PENDING) {
 
                 // TODO: 나중에 델리게이트 처리
                 data->Socket.OnReceived(cbTransferred);
@@ -194,6 +195,7 @@ void Network::Run(void) {
 LPPER_HANDLE_DATA Network::MakeClientSession(SOCKET _clientSocket, const SOCKADDR_IN& _addr, const int _addrLen) {
 	LPPER_HANDLE_DATA data = new PER_HANDLE_DATA();
 	data->Socket.Initialize(_clientSocket, _addr, _addrLen);
+	TcpSessionManager.AddTcpClient(&(data->Socket));
 	return data;
 }
 

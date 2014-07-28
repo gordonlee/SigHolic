@@ -50,6 +50,9 @@
     <ClCompile Include="src\iocp\Iocp.cpp">
       <Filter>iocp</Filter>
     </ClCompile>
+    <ClCompile Include="src\socket\TcpSessionManager.cpp">
+      <Filter>socket</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\utility\AutoLock.h">
@@ -300,6 +303,9 @@
     </ClInclude>
     <ClInclude Include="src\iocp\OverlappedStructure.h">
       <Filter>iocp</Filter>
+    </ClInclude>
+    <ClInclude Include="src\socket\TcpSessionManager.h">
+      <Filter>socket</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
