@@ -22,12 +22,16 @@ SOCKET TcpServer::Bind(int _listenPort) {
 	m_SocketAddr.sin_addr.s_addr = ::htonl(INADDR_ANY);
 	m_SocketAddr.sin_port = ::htons(_listenPort);
 
-	::bind(m_Socket,
+	int bindResult = ::bind(m_Socket,
 		reinterpret_cast<SOCKADDR *>(&m_SocketAddr),
 		sizeof(m_SocketAddr));
+    if (bindResult == SOCKET_ERROR) {
+        printf("bind failed with error: %d\n", WSAGetLastError());
+    }
 
 	int result = ::listen(m_Socket, SOMAXCONN);
 	if (result == SOCKET_ERROR) {
+        printf("listen failed with error: %d\n", WSAGetLastError());
 		return SOCKET_ERROR;
 	}
 	return m_Socket;
@@ -64,6 +68,9 @@ SOCKET TcpServer::Accept(SOCKADDR_IN* _remoteAddr, int* _remoteLength) {
 		m_Socket,
 		reinterpret_cast<SOCKADDR*>(_remoteAddr),
 		_remoteLength);
+    if (acceptedSocket == INVALID_SOCKET) {
+        printf("accept failed with error: %d\n", WSAGetLastError());
+    }
 
 	return acceptedSocket;
 }

@@ -14,7 +14,8 @@ TcpClient::TcpClient(void)
 , m_RecvBytes(0)
 , m_SendBytes(0)
 , m_RecvIoState(IO_NOT_CONNECTED)
-, m_SendIoState(IO_NOT_CONNECTED){
+, m_SendIoState(IO_NOT_CONNECTED)
+, m_isClosing(false) {
 	::memset(&m_SocketAddr, 0, sizeof(m_SocketAddr));
 
 	m_pSendLock = new CriticalSectionLock();
@@ -32,6 +33,7 @@ TcpClient::~TcpClient(void) {
 
 int TcpClient::Initialize(void) {
     m_Socket = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    m_RecvIoState = IO_CONNECTED;
     return 0;
 }
 
@@ -100,7 +102,9 @@ int TcpClient::RecvAsync(const LPOVERLAPPED _overlapped) {
 }
 
 void TcpClient::Close(bool isForce) {
+    RemoveBuffers();
 	::closesocket(m_Socket);
+    m_isClosing = true;
 }
 
 const SOCKET TcpClient::GetSocket() const {
@@ -134,13 +138,6 @@ void TcpClient::OnReceived(unsigned long transferred) {
 const int packet_header_size = sizeof(PacketHeader);
 
 void TcpClient::TryProcessPacket() {
-	
-	if (m_RecvBytes <= 0) {
-		// unexpected value. do close
-		Close(true);
-		return;
-	}
-	
 	if (m_RecvBytes > 0 && m_RecvBytes < packet_length_header) {
 		// TODO: try recv again
 		m_RecvIoState = IO_CONNECTED;
@@ -151,24 +148,20 @@ void TcpClient::TryProcessPacket() {
 	Packet* packetPointer = reinterpret_cast<Packet *>(m_pRecvBuffer->GetPtr());
 
 	while (packetPointer->dataSize_ > 0 &&
-		m_RecvBytes >= packetPointer->dataSize_ + packet_header_size)
+        m_pRecvBuffer->GetLength() >= packetPointer->dataSize_ + packet_header_size)
 	{
 		byte packet[BUFFER_SIZE] = { 0, };
 		::memset(packet, 0, BUFFER_SIZE);
-		m_pRecvBuffer->Read(packetPointer->dataSize_ + packet_header_size, (char*)packet, BUFFER_SIZE);
+
+        int requestReadBytes = (int)(packetPointer->dataSize_) + packet_header_size;
+        int readBytes = m_pRecvBuffer->Read(requestReadBytes, (char*)packet, BUFFER_SIZE);
+
+        m_RecvBytes -= readBytes;
+
 		ProcessPacket((Packet*)packet);
 
-		// FIXME: m_RecvBytes 가 음수로 떨어지는 케이스가 있는 것 같다.
-		if (packetPointer->dataSize_ + packet_header_size > m_RecvBytes)
-		{
-			// 상태이상으로 판정하여 끊어줌.
-			Close(true);
-			return;
-		}
-		m_RecvBytes -= (packetPointer->dataSize_ + packet_header_size);
-
-		if (m_pRecvBuffer->GetLength() > packet_length_header) {
-			packetPointer = (Packet*)m_pRecvBuffer->GetPtr();
+        if (m_pRecvBuffer != NULL && 
+            m_pRecvBuffer->GetLength() > packet_length_header) {
 		}
 		else {
 			break;
@@ -190,7 +183,7 @@ void TcpClient::ProcessPacket(Packet* packet) {
 	/// Verify Flag
 	if (packet->flag_ == 0x01) {	// send as echo
 		PacketData* dataSection = (PacketData*)packet->data_;
-		/*
+        /*
 		printf("[%s:%d] ProcessPacket [%d:%d:%d][%d:%d:%d][%s]\n",
 			inet_ntoa(m_SocketAddr.sin_addr),
 			ntohs(m_SocketAddr.sin_port),
@@ -201,7 +194,7 @@ void TcpClient::ProcessPacket(Packet* packet) {
 			dataSection->clientId_,
 			dataSection->sentTime_,
 			dataSection->data_);
-		*/
+        */
 		printf("[%s:%d] ProcessPacket [%d:%d:%d][%d:%d:%d]\n",
 			inet_ntoa(m_SocketAddr.sin_addr),
 			ntohs(m_SocketAddr.sin_port),
@@ -216,6 +209,9 @@ void TcpClient::ProcessPacket(Packet* packet) {
 			reinterpret_cast<byte*>(packet), 
 			packet->dataSize_ + packet_header_size);
 		if (transferredSendData < 0) {
+            if (transferredSendData == SOCKET_ERROR) {
+                printf("send failed with error: %d\n", WSAGetLastError());
+            }
 			Close(true);
 			return;
 		}
@@ -233,6 +229,7 @@ void TcpClient::ProcessPacket(Packet* packet) {
 				}
 			}
 		}
+        
 	}
 	else {
 		// Unknown flag
@@ -242,6 +239,9 @@ void TcpClient::ProcessPacket(Packet* packet) {
 
 bool TcpClient::IsValid(void) const {
 	// TODO: varify valid
+    if (m_isClosing) {
+        return false;
+    }
 	return true;
 }
 

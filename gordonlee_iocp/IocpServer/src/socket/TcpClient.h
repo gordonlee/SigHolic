@@ -51,16 +51,17 @@ public:
 	SOCKET m_Socket;
 	SOCKADDR_IN m_SocketAddr;
 	bool m_IsSetupAddr;
+    bool m_isClosing;
 
     // MEMO: input from async WorkerThread, output to OnReceived events
 	IO_STATE m_RecvIoState;
 	IBuffer* m_pRecvBuffer;
-    unsigned long m_RecvBytes;
+    int m_RecvBytes;
 
 	// MEMO: send operation needs thread safe mode.
 	IO_STATE m_SendIoState;
 	IBuffer* m_pSendBuffer;
-	unsigned long m_SendBytes;
+	int m_SendBytes;
 	ILock* m_pSendLock;
 	
 	

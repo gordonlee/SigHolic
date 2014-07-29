@@ -14,7 +14,7 @@ class IBuffer {
 	virtual const int GetEmptyLength(void) = 0;
 	virtual int Write(const byte* _startPoint, int _length) = 0;
 	virtual void ForceAddLength(int _length) = 0;
-	virtual int Read(int _readLength, char* _destBuffer, int _destLength) = 0;
+	virtual int Read(const int _readLength, char* _destBuffer, int _destLength) = 0;
 	virtual void Clear(void) = 0;
 };
 
@@ -60,11 +60,13 @@ class PulledBuffer : public IBuffer {
 		m_Length += _length;
 	}
 
-	virtual int Read(int _readLength, char* _destBuffer, int _destLength) {
+	virtual int Read(const int _readLength, char* _destBuffer, int _destLength) {
 		if (_readLength > m_Length) {
 			// FIXME: 어떻게 TcpClient::m_RecvBytes랑 m_Length랑 다르지??? -> 리시브에서 받은거 날리고있었네
 			throw;
 		}
+
+        int cacheLength = _readLength;
 
 		errno_t copyResult = ::memcpy_s(_destBuffer, _destLength, m_Buffer, _readLength);
 		// TODO: check copyResult
@@ -80,6 +82,12 @@ class PulledBuffer : public IBuffer {
 
 			Write(tempBuffer, tempLength);
 		}
+
+        if (cacheLength != _readLength)
+        {
+            int i = 0;
+        }
+
 		return _readLength;
 	}
 

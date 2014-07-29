@@ -96,9 +96,17 @@ unsigned int __stdcall WorkerThread(LPVOID lpParam) {
 
 			::ZeroMemory(&(data->Overlapped), sizeof(data->Overlapped));
 
-			if (data->Socket.RecvAsync(&(data->Overlapped)) != 0) {
-				err_display("WSARecv() Error at WorkerThread.");
-			}
+
+            if (data->Socket.IsValid()) {
+                if (data->Socket.RecvAsync(&(data->Overlapped)) != 0) {
+                    err_display("WSARecv() Error at WorkerThread.");
+                }
+            }
+            else {
+                delete data;
+                continue;
+            }
+            
 		}
 		else {
 			//TODO: do something when it catches any case.
