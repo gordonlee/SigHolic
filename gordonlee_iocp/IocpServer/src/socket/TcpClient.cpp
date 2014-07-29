@@ -52,7 +52,7 @@ int TcpClient::SendAsync(void) {
 }
 
 int TcpClient::Send(byte* _buffer, int _sendBytes) {
-	AutoLock autoLockInstance(m_pSendLock);
+	// AutoLock autoLockInstance(m_pSendLock);
 
 	m_SendIoState = IO_PENDING;
 
@@ -64,8 +64,27 @@ int TcpClient::Send(byte* _buffer, int _sendBytes) {
     return ::send(m_Socket, m_pSendBuffer->GetPtr(), m_pSendBuffer->GetLength(), 0);
 }
 
+int TcpClient::EnqueueSendBuffer(byte* _buffer, int _sendBytes) {
+    // AutoLock autoLockInstance(m_pSendLock);
+
+    m_SendIoState = IO_PENDING;
+
+    int writtenBytes = m_pSendBuffer->Write(_buffer, _sendBytes);
+    if (writtenBytes != _sendBytes) {
+        return -1;
+    }
+    return writtenBytes;
+}
+
+int TcpClient::FlushSendBuffer() {
+    if (m_pSendBuffer->GetLength() > 0) {
+        return ::send(m_Socket, m_pSendBuffer->GetPtr(), m_pSendBuffer->GetLength(), 0);
+    }
+    return 0;
+}
+
 int TcpClient::Send(IBuffer* _buffer, int _sendBytes) {
-	AutoLock autoLockInstance(m_pSendLock);
+	// AutoLock autoLockInstance(m_pSendLock);
 
 	m_SendIoState = IO_PENDING;
 	if (_buffer && _sendBytes > 0) {
@@ -153,8 +172,7 @@ void TcpClient::TryProcessPacket() {
 		byte packet[BUFFER_SIZE] = { 0, };
 		::memset(packet, 0, BUFFER_SIZE);
 
-        int requestReadBytes = (int)(packetPointer->dataSize_) + packet_header_size;
-        int readBytes = m_pRecvBuffer->Read(requestReadBytes, (char*)packet, BUFFER_SIZE);
+        int readBytes = m_pRecvBuffer->Read(packetPointer->dataSize_ + packet_header_size, (char*)packet, BUFFER_SIZE);
 
         m_RecvBytes -= readBytes;
 
@@ -162,11 +180,14 @@ void TcpClient::TryProcessPacket() {
 
         if (m_pRecvBuffer != NULL && 
             m_pRecvBuffer->GetLength() > packet_length_header) {
+            Packet* packetPointer = reinterpret_cast<Packet *>(m_pRecvBuffer->GetPtr());
 		}
 		else {
 			break;
 		}
 	}
+    int sendbytes = FlushSendBuffer();
+    OnSend(sendbytes);
 }
 
 void TcpClient::ProcessPacket(Packet* packet) {
@@ -194,7 +215,7 @@ void TcpClient::ProcessPacket(Packet* packet) {
 			dataSection->clientId_,
 			dataSection->sentTime_,
 			dataSection->data_);
-        */
+        
 		printf("[%s:%d] ProcessPacket [%d:%d:%d][%d:%d:%d]\n",
 			inet_ntoa(m_SocketAddr.sin_addr),
 			ntohs(m_SocketAddr.sin_port),
@@ -204,10 +225,15 @@ void TcpClient::ProcessPacket(Packet* packet) {
 			dataSection->packetId_,
 			dataSection->clientId_,
 			dataSection->sentTime_);
-		
+		*/
+        /*
 		int transferredSendData = Send(
 			reinterpret_cast<byte*>(packet), 
 			packet->dataSize_ + packet_header_size);
+            */
+        int transferredSendData = EnqueueSendBuffer(
+            reinterpret_cast<byte*>(packet),
+            packet->dataSize_ + packet_header_size);
 		if (transferredSendData < 0) {
             if (transferredSendData == SOCKET_ERROR) {
                 printf("send failed with error: %d\n", WSAGetLastError());
@@ -215,7 +241,7 @@ void TcpClient::ProcessPacket(Packet* packet) {
 			Close(true);
 			return;
 		}
-		OnSend(transferredSendData);
+		// OnSend(transferredSendData);
 	}
 	else if (packet->flag_ == 0x02) { // send as broadcast to all sessions
 		for (auto client : TcpSessionManager.GetWholeClients()) {
@@ -246,7 +272,7 @@ bool TcpClient::IsValid(void) const {
 }
 
 void TcpClient::OnSend(unsigned long transferred) {
-	AutoLock autoLockInstance(m_pSendLock);
+	// AutoLock autoLockInstance(m_pSendLock);
 
     m_SendIoState = IO_CONNECTED;
     m_pSendBuffer->Clear();

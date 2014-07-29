@@ -25,6 +25,8 @@ public:
 
 	int SendAsync(void);
     int Send(byte* _buffer, int _sendBytes);
+    int EnqueueSendBuffer(byte* _buffer, int _sendBytes);
+    int FlushSendBuffer();
 	int Send(IBuffer* _buffer, int _sendBytes);
 
 	int RecvAsync(const LPOVERLAPPED _overlapped);

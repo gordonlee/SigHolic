@@ -53,7 +53,7 @@ class PulledBuffer : public IBuffer {
 
         ::memcpy(m_Buffer, _startPoint, _length);
         m_Length += _length;
-        return m_Length;
+        return _length;
     }
 
 	virtual void ForceAddLength(int _length) {
