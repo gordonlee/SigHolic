@@ -2,6 +2,8 @@
 #pragma once
 
 #include "common_header/base_header.h"
+#include "iocp/iocp_structure.h"
+
 
 enum IO_STATE {
     IO_NOT_CONNECTED = 0,
@@ -20,16 +22,18 @@ public:
 
     int Initialize(void);
 	int Initialize(const SOCKET _socket, const SOCKADDR_IN& _addr, const int _addrLen);
+
+	void BindRecvOverlapped(OverlappedIO* _overlapped);
 	
 	bool IsValid(void) const;
 
-	int SendAsync(void);
+	int SendAsync(byte* _buffer, int _sendBytes);
     int Send(byte* _buffer, int _sendBytes);
     int EnqueueSendBuffer(byte* _buffer, int _sendBytes);
     int FlushSendBuffer();
 	int Send(IBuffer* _buffer, int _sendBytes);
 
-	int RecvAsync(const LPOVERLAPPED _overlapped);
+	int RecvAsync(void);
 	void TryProcessPacket();
 	
 	void Close(bool isForce);
@@ -56,6 +60,7 @@ public:
     bool m_isClosing;
 
     // MEMO: input from async WorkerThread, output to OnReceived events
+	OverlappedIO* m_pRecvOverlapped;
 	IO_STATE m_RecvIoState;
 	IBuffer* m_pRecvBuffer;
     int m_RecvBytes;
@@ -65,6 +70,5 @@ public:
 	IBuffer* m_pSendBuffer;
 	int m_SendBytes;
 	ILock* m_pSendLock;
-	
 	
 };

@@ -2,22 +2,56 @@
 #include "network.h"
 
 #include "socket/TcpSessionManager.h"
+#include "iocp/iocp_structure.h"
+
 
 namespace {
 	// FIXME: replace this function to log class
 	void err_display(char *msg) {
 		LPVOID lpMsgBuf;
+        int errorCode = WSAGetLastError();
 		FormatMessage(
 			FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
 			NULL,
-			WSAGetLastError(),
+            errorCode,
 			MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
 			(LPTSTR)&lpMsgBuf,
 			0,
 			NULL);
-		printf("[%s] %s", msg, (LPCTSTR)lpMsgBuf);
+        printf("[%s][Code: %d] %s ", msg, errorCode, (LPCTSTR)lpMsgBuf);
 		LocalFree(lpMsgBuf);
 	}
+
+
+	static CriticalSectionLock g_recvIoPoolLock;
+    static OverlappedIoPool g_recvIoPool(&g_recvIoPoolLock);
+
+	OverlappedIO* MakeClientSessionEx(SOCKET _clientSocket, const SOCKADDR_IN& _addr, const int _addrLen) {
+		TcpClient* client = new TcpClient();
+		client->Initialize(_clientSocket, _addr, _addrLen);
+		
+        TcpSessionManager.AddTcpClient(client);
+
+		OverlappedIO* overlapped = g_recvIoPool.Dequeue();
+		client->BindRecvOverlapped(overlapped);
+		return overlapped;
+	}
+}
+
+void CloseSession(OverlappedIO* data) {
+    // printf("Close Client [Client: %X, Overlapped: %X]\n", data->GetClientObject(), data);
+
+    if (TcpClient* client = data->GetClientObject()) {
+        TcpSessionManager.RemoveTcpClient(client);
+        client->Close(false);
+        delete client;
+    }
+
+    data->SetClientObject(NULL);
+    data->Reset();
+    g_recvIoPool.Enqueue(data);
+
+    // ::CancelIoEx(m_Iocp.GetHandle(), data);
 }
 
 unsigned int __stdcall WorkerThread(LPVOID lpParam) {
@@ -27,7 +61,7 @@ unsigned int __stdcall WorkerThread(LPVOID lpParam) {
 	int retval;
 	DWORD cbTransferred;
 	SOCKET client_socket = 0;
-	LPPER_HANDLE_DATA data = NULL;
+	OverlappedIO* data = NULL;
 
 	while (TRUE) {
 		retval = ::GetQueuedCompletionStatus(
@@ -37,7 +71,11 @@ unsigned int __stdcall WorkerThread(LPVOID lpParam) {
 			(LPOVERLAPPED *)(&data),
 			INFINITE);
 
-		DWORD lastError = GetLastError();
+		// DWORD lastError = GetLastError();
+
+        //printf("-- [retval: %d, transfer: %d, socket: %d, Client: %X, Overlapped: %X]\n"
+        //    , retval, cbTransferred, client_socket, data->GetClientObject(), data);
+
         /*
         if (retval > 0 &&
             (PULONG_PTR)client_socket == (PULONG_PTR)(&m_ListenSocket) &&
@@ -58,14 +96,16 @@ unsigned int __stdcall WorkerThread(LPVOID lpParam) {
 
         else
         */
-		if (retval == 0 || cbTransferred == 0) {
-			if (retval == 0) {
+
+        if (retval == 0 || cbTransferred == 0) {
+			if (retval == 0) 
+            {
 				DWORD temp1, temp2;
 				if (data != NULL)
 				{
 					::WSAGetOverlappedResult(
-						data->Socket.GetSocket(),
-						&(data->Overlapped),
+						data->GetClientObject()->GetSocket(),
+						(LPWSAOVERLAPPED)&(data),
 						&temp1,
 						FALSE,
 						&temp2);
@@ -76,40 +116,47 @@ unsigned int __stdcall WorkerThread(LPVOID lpParam) {
 
 			SOCKADDR_IN clientaddr;
 			int addrlen = sizeof(clientaddr);
-			getpeername(data->Socket.GetSocket(), (SOCKADDR *)&clientaddr, &addrlen);
+            getpeername(data->GetClientObject()->GetSocket(), (SOCKADDR *)&clientaddr, &addrlen);
 
 			printf("[TCP 서버] 클라이언트 종료: IP 주소=%s, 포트 번호=%d\n",
 				inet_ntoa(clientaddr.sin_addr), ntohs(clientaddr.sin_port));
 
-			data->Socket.Close(false);
-			TcpSessionManager.RemoveTcpClient(&(data->Socket));
-			//FIXME: delete data at here is dangerous!
-			delete data;
+            CloseSession(data);
+
 			continue;
 		}
 		else if (data) {
-            if (cbTransferred > 0 && data->Socket.GetRecvIoState() == IO_PENDING) {
+			
+            // if getRecvOverlapped == _overlapped
+            if (cbTransferred > 0 && data->GetClientObject()->GetRecvIoState() == IO_PENDING) {
 
                 // TODO: 나중에 델리게이트 처리
-                data->Socket.OnReceived(cbTransferred);
+                data->GetClientObject()->OnReceived(cbTransferred);
 			}
 
-			::ZeroMemory(&(data->Overlapped), sizeof(data->Overlapped));
+			// if getSendOverlapped == _overlapped
+			if (cbTransferred > 0) {
+				// data->Socket.OnSend(cbTransffered);
+			}
 
-
-            if (data->Socket.IsValid()) {
-                if (data->Socket.RecvAsync(&(data->Overlapped)) != 0) {
+            if (data->GetClientObject()->IsValid()) {
+                if (data->GetClientObject()->RecvAsync() != 0) {
                     err_display("WSARecv() Error at WorkerThread.");
                 }
             }
             else {
-                delete data;
+                printf("Close Client invalid [Client: %X, Overlapped: %X]\n", data->GetClientObject(), data);
+
+                CloseSession(data);
+
                 continue;
             }
-            
 		}
 		else {
-			//TODO: do something when it catches any case.
+            printf("Unhandled case is occurred.\n");
+            if (data != NULL) {
+                CloseSession(data);
+            }
 		}
 	}
 
@@ -144,7 +191,7 @@ void Network::Initialize(void) {
 }
 
 void Network::RunWithAcceptEx(void) {
-
+    /*
     LPPER_HANDLE_DATA data = new PER_HANDLE_DATA();
     ZeroMemory(&(data->Overlapped), sizeof(data->Overlapped));
     m_Iocp.BindSocket((HANDLE)(m_ListenSocket.GetSocket()), (DWORD)(&m_ListenSocket));
@@ -154,7 +201,7 @@ void Network::RunWithAcceptEx(void) {
     ZeroMemory(&(data2->Overlapped), sizeof(data2->Overlapped));
     m_Iocp.BindSocket((HANDLE)(m_ListenSocket.GetSocket()), (DWORD)(&m_ListenSocket));
     data2->Socket.Initialize();
-
+    
     BOOL result = m_ListenSocket.AcceptEx(data->Socket.GetSocket(),
         NULL, 0, 0, 0, &(data->Overlapped));
     if (result == FALSE) {
@@ -167,7 +214,7 @@ void Network::RunWithAcceptEx(void) {
         err_display("fail with acceptEx");
     }
 
-
+    */
     while (true) {
         ::Sleep(1000);
     }
@@ -181,36 +228,23 @@ void Network::Run(void) {
 		int remoteLen = sizeof(saRemote);
 		SOCKET Accepted = m_ListenSocket.Accept(&saRemote, &remoteLen);
 
-		LPPER_HANDLE_DATA perHandleData = MakeClientSession(Accepted, saRemote, remoteLen);
+		// LPPER_HANDLE_DATA perHandleData = MakeClientSession(Accepted, saRemote, remoteLen);
+		OverlappedIO* handleData = MakeClientSessionEx(Accepted, saRemote, remoteLen);
 		m_Iocp.BindSocket((HANDLE)(Accepted), static_cast<DWORD>(Accepted));
 
 		printf("[TCP 서버] 클라이언트 접속: IP 주소=%s, 포트 번호=%d\n",
 			inet_ntoa(saRemote.sin_addr), ntohs(saRemote.sin_port));
 		printf("Socket number %d connected\n", Accepted);
 
-		// start socket's i/o job
-		// MEMO: 초기화 안된 Overlapped 쓰면 객체 뻑남.
-		ZeroMemory(&(perHandleData->Overlapped), sizeof(perHandleData->Overlapped));
-
-		if (perHandleData->Socket.RecvAsync(
-			&(perHandleData->Overlapped)
-			) != 0) {
+		if (handleData->GetClientObject()->RecvAsync() != 0) {
 			err_display("RecvAsync() Error at main thread");
 		}
 	}
 }
 
-LPPER_HANDLE_DATA Network::MakeClientSession(SOCKET _clientSocket, const SOCKADDR_IN& _addr, const int _addrLen) {
-	LPPER_HANDLE_DATA data = new PER_HANDLE_DATA();
-	data->Socket.Initialize(_clientSocket, _addr, _addrLen);
-	TcpSessionManager.AddTcpClient(&(data->Socket));
-	return data;
-}
-
 void Network::Cleanup() {
 	EndNetwork();
 } 
-
 
 bool Network::StartNetwork() {
 	static WSADATA wsa;
