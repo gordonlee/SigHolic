@@ -47,11 +47,11 @@ class PulledBuffer : public IBuffer {
 	}
 
 	virtual int Write(const byte* _startPoint, int _length) {
-        if (_length > BUFFER_SIZE) {
+        if (m_Length + _length > BUFFER_SIZE) {
             return -1;
         }
 
-        ::memcpy(m_Buffer, _startPoint, _length);
+        ::memcpy_s(m_Buffer + m_Length, BUFFER_SIZE - m_Length, _startPoint, _length);
         m_Length += _length;
         return _length;
     }
@@ -62,7 +62,8 @@ class PulledBuffer : public IBuffer {
 
 	virtual int Read(const int _readLength, char* _destBuffer, int _destLength) {
 		if (_readLength > m_Length) {
-			// FIXME: 어떻게 TcpClient::m_RecvBytes랑 m_Length랑 다르지??? -> 리시브에서 받은거 날리고있었네
+			// MEMO: 어떻게 TcpClient::m_RecvBytes랑 m_Length랑 다르지??? 
+            // -> 리시브에서 받은거 날리고있었네
 			throw;
 		}
 
@@ -82,11 +83,6 @@ class PulledBuffer : public IBuffer {
 
 			Write(tempBuffer, tempLength);
 		}
-
-        if (cacheLength != _readLength)
-        {
-            int i = 0;
-        }
 
 		return _readLength;
 	}
