@@ -1,6 +1,7 @@
 #pragma once
 
 #include <list>
+#include <memory>
 
 #include "utility/AutoLock.h"
 #include "socket/TcpClient.h"
@@ -16,7 +17,7 @@ class TcpSessionManager {
 		 return instance;
 	 }
 
-	 bool AddTcpClient(TcpClient* _client) {
+	 bool AddTcpClient(std::shared_ptr<TcpClient> _client) {
 		 SCOPED_LOCK(TCP_SESSION_MANAGER_LOCK);
 		 
 		 m_clients.remove(_client);
@@ -25,13 +26,13 @@ class TcpSessionManager {
 		 return true;
 	 }
 
-	 void RemoveTcpClient(TcpClient* _client) {
+	 void RemoveTcpClient(std::shared_ptr<TcpClient> _client) {
 		 SCOPED_LOCK(TCP_SESSION_MANAGER_LOCK);
 
 		 m_clients.remove(_client);
 	 }
 
-	 std::list<TcpClient*>& GetWholeClients(void) {
+	 std::list<std::shared_ptr<TcpClient>>& GetWholeClients(void) {
 		 return m_clients;
 	 }
 
@@ -41,7 +42,7 @@ class TcpSessionManager {
 	 }
 
  private:
-	 std::list<TcpClient*> m_clients;
+	 std::list<std::shared_ptr<TcpClient>> m_clients;
 };
 
 #define TcpSessionManager TcpSessionManager::GetInstance()

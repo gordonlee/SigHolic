@@ -16,9 +16,10 @@ class IBuffer {
 	virtual void ForceAddLength(int _length) = 0;
 	virtual int Read(const int _readLength, char* _destBuffer, int _destLength) = 0;
 	virtual void Clear(void) = 0;
+	virtual int ThrowAway(const int _throwLength) = 0;
 };
 
-const int BUFFER_SIZE = 65536;
+const int BUFFER_SIZE = 65536 * 4;
 
 // FIXME: Naming later.
 class PulledBuffer : public IBuffer {
@@ -91,6 +92,26 @@ class PulledBuffer : public IBuffer {
         ::memset(m_Buffer, 0, BUFFER_SIZE);
         m_Length = 0;
     }
+
+	virtual int ThrowAway(const int _throwLength) {
+		if (_throwLength > m_Length) {
+			throw;
+		}
+
+		m_Length -= _throwLength;
+		// pull the buffer in front of start pointer
+		if (m_Length > 0) {
+			byte tempBuffer[BUFFER_SIZE] = { 0, };
+			int tempLength = m_Length;
+			::memcpy_s(tempBuffer, BUFFER_SIZE, m_Buffer + _throwLength, m_Length);
+
+			Clear();
+
+			Write(tempBuffer, tempLength);
+		}
+
+		return _throwLength;
+	}
 
  private:
     byte m_Buffer[BUFFER_SIZE];

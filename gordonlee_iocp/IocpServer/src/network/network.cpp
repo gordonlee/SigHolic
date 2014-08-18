@@ -26,32 +26,54 @@ namespace {
 	static CriticalSectionLock g_recvIoPoolLock;
     static OverlappedIoPool g_recvIoPool(&g_recvIoPoolLock);
 
+	static CriticalSectionLock g_sendIoPoolLock;
+	static OverlappedIoPool g_sendIoPool(&g_sendIoPoolLock);
+
 	OverlappedIO* MakeClientSessionEx(SOCKET _clientSocket, const SOCKADDR_IN& _addr, const int _addrLen) {
-		TcpClient* client = new TcpClient();
-		client->Initialize(_clientSocket, _addr, _addrLen);
-		
-        TcpSessionManager.AddTcpClient(client);
+		std::shared_ptr<TcpClient> client (new TcpClient());
 
 		OverlappedIO* overlapped = g_recvIoPool.Dequeue();
 		client->BindRecvOverlapped(overlapped);
+		overlapped->SetClientObject(client);
+
+		OverlappedIO* sendOverlapped = g_sendIoPool.Dequeue();
+		if (sendOverlapped == NULL) {
+			printf("MakeClientSessionEx> CriticalError!\n");
+		}
+		client->BindSendOverlapped(sendOverlapped);
+		sendOverlapped->SetClientObject(client);
+
+		client->Initialize(_clientSocket, _addr, _addrLen);
+
+		TcpSessionManager.AddTcpClient(client);
+
 		return overlapped;
 	}
 }
 
+// data가 sendOverlapped 인지, recvOverlapped 인지 모른다.
 void CloseSession(OverlappedIO* data) {
     // printf("Close Client [Client: %X, Overlapped: %X]\n", data->GetClientObject(), data);
 
-    if (TcpClient* client = data->GetClientObject()) {
+    if (std::shared_ptr<TcpClient> client = data->GetClientObject()) {
         TcpSessionManager.RemoveTcpClient(client);
+
+		if (OverlappedIO* recvOverlapped = client->GetRecvOverlapped()) {
+			recvOverlapped->Reset();
+			recvOverlapped->SetClientObject(NULL);
+			g_recvIoPool.Enqueue(recvOverlapped);
+		}
+
+		if (OverlappedIO* sendOverlapped = client->GetSendOverlapped()) {
+			sendOverlapped->Reset();
+			sendOverlapped->SetClientObject(NULL);
+			g_sendIoPool.Enqueue(sendOverlapped);
+		}
+
         client->Close(false);
-        delete client;
     }
-
-    data->SetClientObject(NULL);
-    data->Reset();
-    g_recvIoPool.Enqueue(data);
-
-    // ::CancelIoEx(m_Iocp.GetHandle(), data);
+    
+	// ::CancelIoEx(m_Iocp.GetHandle(), data);
 }
 
 unsigned int __stdcall WorkerThread(LPVOID lpParam) {
@@ -122,35 +144,50 @@ unsigned int __stdcall WorkerThread(LPVOID lpParam) {
 				inet_ntoa(clientaddr.sin_addr), ntohs(clientaddr.sin_port));
 
             CloseSession(data);
-
-			continue;
 		}
-		else if (data) {
-			
-            // if getRecvOverlapped == _overlapped
-            if (cbTransferred > 0 && data->GetClientObject()->GetRecvIoState() == IO_PENDING) {
+		else if (data && data->GetClientObject() == NULL) {
+			printf("This session is already Expired. Overlapped: %X]\n", data);
+		}
+		else if (data && 
+				data->GetClientObject() != NULL && 
+				cbTransferred > 0) {
+            
+			std::shared_ptr<TcpClient> clientSession = data->GetClientObject();
+
+			if (clientSession->GetRecvOverlapped() == data &&
+				clientSession->GetRecvIoState() == IO_PENDING) {
 
                 // TODO: 나중에 델리게이트 처리
-                data->GetClientObject()->OnReceived(cbTransferred);
+				clientSession->OnReceived(cbTransferred);
+
+				if (clientSession->IsValid()) {
+					if (clientSession->RecvAsync() != 0) {
+						err_display("WSARecv() Error at WorkerThread.");
+					}
+				}
+				else {
+					printf("RecvContext: Close Client invalid [Client: %X, Overlapped: %X]\n", data->GetClientObject(), data);
+
+					CloseSession(data);
+				}
 			}
 
-			// if getSendOverlapped == _overlapped
-			if (cbTransferred > 0) {
-				// data->Socket.OnSend(cbTransffered);
+			if (clientSession->GetSendOverlapped() == data &&
+				clientSession->GetSendIoState() == IO_PENDING) {
+				
+				clientSession->OnSend(cbTransferred);
+
+				if (clientSession->IsValid()) {
+					if (clientSession->SendAsync() != 0) {
+						err_display("WSASend() Error at WorkerThread.");
+					}
+				}
+				else {
+					printf("SendContext: Close Client invalid [Client: %X, Overlapped: %X]\n", data->GetClientObject(), data);
+
+					CloseSession(data);
+				}
 			}
-
-            if (data->GetClientObject()->IsValid()) {
-                if (data->GetClientObject()->RecvAsync() != 0) {
-                    err_display("WSARecv() Error at WorkerThread.");
-                }
-            }
-            else {
-                printf("Close Client invalid [Client: %X, Overlapped: %X]\n", data->GetClientObject(), data);
-
-                CloseSession(data);
-
-                continue;
-            }
 		}
 		else {
             printf("Unhandled case is occurred.\n");
@@ -181,6 +218,10 @@ void Network::Initialize(void) {
 		// log here.
 		return;
 	}
+
+	// MEMO: pre-allocation
+	g_recvIoPool.GrowPoolSize(2048);
+	g_sendIoPool.GrowPoolSize(2048);
 
 	// create I/O completion port
 	const int numberOfThread = 4;   //TODO: remove magic number later.

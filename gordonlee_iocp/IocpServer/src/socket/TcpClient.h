@@ -24,10 +24,11 @@ public:
 	int Initialize(const SOCKET _socket, const SOCKADDR_IN& _addr, const int _addrLen);
 
 	void BindRecvOverlapped(OverlappedIO* _overlapped);
+	void BindSendOverlapped(OverlappedIO* _overlapped);
 	
 	bool IsValid(void) const;
 
-	int SendAsync(byte* _buffer, int _sendBytes);
+	int SendAsync();
     int Send(byte* _buffer, int _sendBytes);
     int EnqueueSendBuffer(byte* _buffer, int _sendBytes);
     int FlushSendBuffer();
@@ -41,7 +42,11 @@ public:
 public:
     const SOCKET GetSocket() const ;
 	const IBuffer* GetRecvBuffer();
-    const IO_STATE GetRecvIoState() const ;
+    const IO_STATE GetRecvIoState() const;
+	const IO_STATE GetSendIoState() const;
+	OverlappedIO* GetRecvOverlapped();
+	OverlappedIO* GetSendOverlapped();
+
 
     // handling events
  public:
@@ -66,6 +71,7 @@ public:
     int m_RecvBytes;
 
 	// MEMO: send operation needs thread safe mode.
+	OverlappedIO* m_pSendOverlapped;
 	IO_STATE m_SendIoState;
 	IBuffer* m_pSendBuffer;
 	int m_SendBytes;

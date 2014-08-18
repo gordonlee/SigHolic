@@ -3,6 +3,7 @@
 // MEMO: c++ 11 std header
 #include <list>
 #include <queue>
+#include <memory>
 
 #include "common_header/base_header.h"
 #include "utility/AutoLock.h"
@@ -23,20 +24,20 @@ typedef struct _OverlappedIO sealed : public OVERLAPPED {
 		hEvent = 0;
 	}
 
-    void SetClientObject(TcpClient* _client) {
+	void SetClientObject(std::shared_ptr<TcpClient> _client) {
         Client = _client;
     }
 
-    TcpClient* GetClientObject(void) {
+    std::shared_ptr<TcpClient> GetClientObject(void) {
         return Client;
     }
 
 private:
-    TcpClient* Client;
+    std::shared_ptr<TcpClient> Client;
 } OverlappedIO;
 
 
-const int g_default_io_pool_size = 4;
+const static int g_default_io_pool_size = 2048;
 
 class OverlappedIoPool {
  public:
@@ -51,12 +52,10 @@ class OverlappedIoPool {
 		 AutoLock autolock(m_lock);
 
 		 if (m_waitingQueue.size() == 0) {
-             MakeOverlappedIo();
-             /*
+             //MakeOverlappedIo();
              if (GrowPoolSize(g_default_io_pool_size) == FALSE) {
                  throw;
              }
-             */
 		 }
 		 OverlappedIO* dequeue = m_waitingQueue.front();
 		 m_waitingQueue.pop();
@@ -87,6 +86,24 @@ class OverlappedIoPool {
 		 std::swap(emptyQueue, m_waitingQueue);
 	 }
 
+	 BOOL GrowPoolSize(int _elementCount) {
+		 AutoLock autolock(m_lock);
+
+		 if (_elementCount <= 0) { return FALSE; }
+		 OverlappedIO* allocArray = new OverlappedIO[_elementCount]();
+		 m_dataPool.push_back(allocArray);
+
+		 OverlappedIO* insertPtr = allocArray;
+		 for (int i = 0; i < _elementCount; ++i) {
+			 insertPtr->Reset();
+			 // m_waitingQueue.push(insertPtr);
+			 Enqueue(insertPtr);
+			 // TODO: 공부 다시 하자 ㄱ-
+			 ++insertPtr;
+		 }
+		 return TRUE;
+	 }
+
  private:	// functions
 
      OverlappedIO* MakeOverlappedIo() {
@@ -95,21 +112,7 @@ class OverlappedIoPool {
          return element;
      }
 
-	 // FIXME: Test Grow again
-	 BOOL GrowPoolSize(int _elementCount) {
-		 AutoLock autolock(m_lock);
-
-		 if (_elementCount <= 0) { return FALSE; }
-
-		 OverlappedIO* allocArray = new OverlappedIO[_elementCount];
-		 OverlappedIO* insertPtr = allocArray;
-		 for (int i = 0; i < _elementCount; ++i) {
-			 m_waitingQueue.push(insertPtr);
-			 insertPtr += sizeof(OverlappedIO);
-		 }
-		 m_dataPool.push_back(allocArray);
-		 return TRUE;
-	 }
+	 
 
  private:	// members
 	 std::queue<OverlappedIO*> m_waitingQueue;

@@ -7,6 +7,15 @@
 #include "utility/AutoLock.h"
 #include "iocp/iocp_structure.h"
 
+// TODO: 이걸 만들어 말어..
+namespace {
+	class IoContext {
+
+	};
+}
+
+///
+
 TcpClient::TcpClient(void) 
 : m_Socket(0)
 , m_IsSetupAddr(false)
@@ -17,7 +26,8 @@ TcpClient::TcpClient(void)
 , m_RecvIoState(IO_NOT_CONNECTED)
 , m_SendIoState(IO_NOT_CONNECTED)
 , m_isClosing(false)
-, m_pRecvOverlapped(NULL) {
+, m_pRecvOverlapped(NULL)
+, m_pSendOverlapped(NULL) {
 	::memset(&m_SocketAddr, 0, sizeof(m_SocketAddr));
 
 	m_pSendLock = new CriticalSectionLock();
@@ -40,36 +50,64 @@ int TcpClient::Initialize(void) {
 }
 
 int TcpClient::Initialize(const SOCKET _socket, const SOCKADDR_IN& _addr, const int _addrLen) {
-    m_Socket = _socket;
+	m_Socket = _socket;
     ::memcpy(&(m_SocketAddr), &_addr, _addrLen);
 
     int addrlen = sizeof(m_SocketAddr);
     getpeername(m_Socket, (SOCKADDR *)&m_SocketAddr, &addrlen);
     m_IsSetupAddr = true;
+
+	m_RecvIoState = IO_CONNECTED;
+
     return 0;
 }
 
 void TcpClient::BindRecvOverlapped(OverlappedIO* _overlapped) {
 	m_pRecvOverlapped = _overlapped;
-    m_pRecvOverlapped->SetClientObject(this);
 }
 
-int TcpClient::SendAsync(byte* _buffer, int _sendBytes) {
-	if (m_SendIoState == IO_PENDING) {
-		// write buffer and finish. 
-		int writtenBytes = m_pSendBuffer->Write(_buffer, _sendBytes);
-		if (writtenBytes != _sendBytes) {
-			return -1;
+void TcpClient::BindSendOverlapped(OverlappedIO* _overlapped) {
+	m_pSendOverlapped = _overlapped;
+}
+
+int TcpClient::SendAsync() {
+	AutoLock autoLockInstance(m_pSendLock);
+	
+	if (m_pSendBuffer->GetLength() > 0) {
+		if (m_SendIoState == IO_PENDING) {
+			// printf("TcpClient::SendAsync> m_SendIoState is IO_PENDING\n");
+		}
+		else {
+			m_SendIoState = IO_PENDING;
+
+			DWORD sendBytes;
+			DWORD flags = 0;
+
+			WSABUF wsaBuf;
+			wsaBuf.buf = m_pSendBuffer->GetPtr();
+			wsaBuf.len = m_pSendBuffer->GetLength();
+
+			m_pSendOverlapped->Reset();
+			// call WSASend()
+			int result = ::WSASend(
+				m_Socket,
+				&wsaBuf,
+				1,
+				&sendBytes,
+				flags,
+				m_pSendOverlapped,
+				NULL);
+
+			if (result == SOCKET_ERROR) {
+				if (WSAGetLastError() != ERROR_IO_PENDING) {
+					return -1;
+				}
+			}
 		}
 	}
 	else {
-		m_SendIoState = IO_PENDING;
-		// write buffer
-
-		// call WSASend()
-
+		m_SendIoState = IO_CONNECTED;
 	}
-
 	
 	return 0;
 }
@@ -90,7 +128,7 @@ int TcpClient::Send(byte* _buffer, int _sendBytes) {
 int TcpClient::EnqueueSendBuffer(byte* _buffer, int _sendBytes) {
     AutoLock autoLockInstance(m_pSendLock);
 
-    m_SendIoState = IO_PENDING;
+    // m_SendIoState = IO_PENDING;
 
     int writtenBytes = m_pSendBuffer->Write(_buffer, _sendBytes);
     if (writtenBytes != _sendBytes) {
@@ -99,6 +137,7 @@ int TcpClient::EnqueueSendBuffer(byte* _buffer, int _sendBytes) {
     return writtenBytes;
 }
 
+/*
 int TcpClient::FlushSendBuffer() {
     AutoLock autoLockInstance(m_pSendLock);
 
@@ -106,6 +145,16 @@ int TcpClient::FlushSendBuffer() {
         return ::send(m_Socket, m_pSendBuffer->GetPtr(), m_pSendBuffer->GetLength(), 0);
     }
     return 0;
+}
+*/
+
+int TcpClient::FlushSendBuffer() {
+	AutoLock autoLockInstance(m_pSendLock);
+
+	if (m_pSendBuffer->GetLength() > 0) {
+		return SendAsync();
+	}
+	return 0;
 }
 
 int TcpClient::Send(IBuffer* _buffer, int _sendBytes) {
@@ -135,7 +184,6 @@ int TcpClient::RecvAsync(void) {
 	wsaBuf.len = m_pRecvBuffer->GetEmptyLength();
 
 	m_pRecvOverlapped->Reset();
-
     
     int result = ::WSARecv(
 		m_Socket,
@@ -156,7 +204,7 @@ int TcpClient::RecvAsync(void) {
 
 void TcpClient::Close(bool isForce) {
     //RemoveBuffers();
-	//::closesocket(m_Socket);
+	::closesocket(m_Socket);
     m_isClosing = true;
 }
 
@@ -171,6 +219,19 @@ const IBuffer* TcpClient::GetRecvBuffer() {
 const IO_STATE TcpClient::GetRecvIoState() const {
     return m_RecvIoState;
 }
+
+const IO_STATE TcpClient::GetSendIoState() const {
+	return m_SendIoState;
+}
+
+OverlappedIO* TcpClient::GetRecvOverlapped() {
+	return m_pRecvOverlapped;
+}
+
+OverlappedIO* TcpClient::GetSendOverlapped() {
+	return m_pSendOverlapped;
+}
+
 
 //// handling events
 const int packet_length_header = 2; 
@@ -220,8 +281,8 @@ void TcpClient::TryProcessPacket() {
 			break;
 		}
 	}
-    int sendbytes = FlushSendBuffer();
-    OnSend(sendbytes);
+    
+	FlushSendBuffer();
 }
 
 void TcpClient::ProcessPacket(Packet* packet) {
@@ -280,14 +341,6 @@ void TcpClient::ProcessPacket(Packet* packet) {
 	else if (packet->flag_ == 0x02) { // send as broadcast to all sessions
 		for (auto& client : TcpSessionManager.GetWholeClients()) {
 			if (client != NULL && client->IsValid()) {
-				/*int transferredSendData = Send(
-					reinterpret_cast<byte*>(packet), 
-					packet->dataSize_ + packet_header_size);
-				if (transferredSendData < 0) {
-					Close(true);
-					return;
-				}
-                */
                 int transferredSendData = client->EnqueueSendBuffer(
                     reinterpret_cast<byte*>(packet),
                     packet->dataSize_ + packet_header_size);
@@ -299,11 +352,9 @@ void TcpClient::ProcessPacket(Packet* packet) {
                     return;
                 }
 
-                int sendbytes = client->FlushSendBuffer();
-                client->OnSend(sendbytes);
+                client->FlushSendBuffer();
 			}
 		}
-        
 	}
 	else {
 		// Unknown flag
@@ -324,8 +375,9 @@ bool TcpClient::IsValid(void) const {
 void TcpClient::OnSend(unsigned long transferred) {
 	AutoLock autoLockInstance(m_pSendLock);
 
+	m_pSendBuffer->ThrowAway(transferred);
+
     m_SendIoState = IO_CONNECTED;
-    m_pSendBuffer->Clear();
 }
 
 
