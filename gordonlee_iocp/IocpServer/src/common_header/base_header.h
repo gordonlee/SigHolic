@@ -5,3 +5,6 @@
 #include <Windows.h>
 #include <memory>
 
+#include <cassert>
+
+#define ASSERT(condition) assert(condition)

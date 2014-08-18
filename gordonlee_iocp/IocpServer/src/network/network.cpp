@@ -178,7 +178,7 @@ unsigned int __stdcall WorkerThread(LPVOID lpParam) {
 				clientSession->OnSend(cbTransferred);
 
 				if (clientSession->IsValid()) {
-					if (clientSession->SendAsync() != 0) {
+                    if (clientSession->FlushSendBuffer() != 0) {
 						err_display("WSASend() Error at WorkerThread.");
 					}
 				}

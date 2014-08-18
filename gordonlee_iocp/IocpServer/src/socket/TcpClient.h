@@ -4,7 +4,6 @@
 #include "common_header/base_header.h"
 #include "iocp/iocp_structure.h"
 
-
 enum IO_STATE {
     IO_NOT_CONNECTED = 0,
     IO_CONNECTED,
@@ -16,10 +15,21 @@ class IBuffer;
 class ILock;
 
 class TcpClient {
-public:
-	TcpClient(void);
-	virtual ~TcpClient(void);
+ // MEMO: User Interface
+ public:
+     TcpClient(void);
+     virtual ~TcpClient(void);
 
+     // send buffer에 패킷을 넣는다. 
+     int WriteSendBuffer(const Packet* _packet);
+
+     // send buffer에 있는 내용을 보낸다.
+     int FlushSendBuffer();
+
+     // send한 결과를 받아온다. 
+     virtual void OnSend(int _errorCode);
+
+ public:
     int Initialize(void);
 	int Initialize(const SOCKET _socket, const SOCKADDR_IN& _addr, const int _addrLen);
 
@@ -28,11 +38,6 @@ public:
 	
 	bool IsValid(void) const;
 
-	int SendAsync();
-    int Send(byte* _buffer, int _sendBytes);
-    int EnqueueSendBuffer(byte* _buffer, int _sendBytes);
-    int FlushSendBuffer();
-	int Send(IBuffer* _buffer, int _sendBytes);
 
 	int RecvAsync(void);
 	void TryProcessPacket();
@@ -57,6 +62,9 @@ public:
      bool CreateBuffers(void);
      void RemoveBuffers(void);
 	 void ProcessPacket(Packet* packet);
+
+     int EnqueueSendBuffer(byte* _buffer, int _sendBytes);
+     int SendAsync();
 
  private:
 	SOCKET m_Socket;

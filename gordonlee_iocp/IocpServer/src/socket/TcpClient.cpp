@@ -1,5 +1,5 @@
-
 #include "./TcpClient.h"
+
 #include "./TcpSessionManager.h"
 
 #include "packet/Packet.h"
@@ -42,6 +42,17 @@ TcpClient::~TcpClient(void) {
 		delete m_pSendLock;
 	}
 }
+
+int TcpClient::WriteSendBuffer(const Packet* _packet) {
+    ASSERT(_packet);
+
+    byte* copy_src = (byte*)(_packet);
+    int copy_length = _packet->dataSize_ + sizeof(PacketHeader);
+
+    return EnqueueSendBuffer(copy_src, copy_length);
+}
+
+////////////////////////////////
 
 int TcpClient::Initialize(void) {
     m_Socket = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -112,23 +123,8 @@ int TcpClient::SendAsync() {
 	return 0;
 }
 
-int TcpClient::Send(byte* _buffer, int _sendBytes) {
-	AutoLock autoLockInstance(m_pSendLock);
-
-	m_SendIoState = IO_PENDING;
-
-    int writtenBytes = m_pSendBuffer->Write(_buffer, _sendBytes);
-    if (writtenBytes != _sendBytes) {
-        return -1;
-    }
-    
-    return ::send(m_Socket, m_pSendBuffer->GetPtr(), m_pSendBuffer->GetLength(), 0);
-}
-
 int TcpClient::EnqueueSendBuffer(byte* _buffer, int _sendBytes) {
     AutoLock autoLockInstance(m_pSendLock);
-
-    // m_SendIoState = IO_PENDING;
 
     int writtenBytes = m_pSendBuffer->Write(_buffer, _sendBytes);
     if (writtenBytes != _sendBytes) {
@@ -137,17 +133,6 @@ int TcpClient::EnqueueSendBuffer(byte* _buffer, int _sendBytes) {
     return writtenBytes;
 }
 
-/*
-int TcpClient::FlushSendBuffer() {
-    AutoLock autoLockInstance(m_pSendLock);
-
-    if (m_pSendBuffer->GetLength() > 0) {
-        return ::send(m_Socket, m_pSendBuffer->GetPtr(), m_pSendBuffer->GetLength(), 0);
-    }
-    return 0;
-}
-*/
-
 int TcpClient::FlushSendBuffer() {
 	AutoLock autoLockInstance(m_pSendLock);
 
@@ -155,16 +140,6 @@ int TcpClient::FlushSendBuffer() {
 		return SendAsync();
 	}
 	return 0;
-}
-
-int TcpClient::Send(IBuffer* _buffer, int _sendBytes) {
-	AutoLock autoLockInstance(m_pSendLock);
-
-	m_SendIoState = IO_PENDING;
-	if (_buffer && _sendBytes > 0) {
-        return ::send(m_Socket, _buffer->GetPtr(), _sendBytes, 0);
-	}
-	return -1;
 }
 
 int TcpClient::RecvAsync(void) {
@@ -321,14 +296,7 @@ void TcpClient::ProcessPacket(Packet* packet) {
 			dataSection->clientId_,
 			dataSection->sentTime_);
 		*/
-        /*
-		int transferredSendData = Send(
-			reinterpret_cast<byte*>(packet), 
-			packet->dataSize_ + packet_header_size);
-            */
-        int transferredSendData = EnqueueSendBuffer(
-            reinterpret_cast<byte*>(packet),
-            packet->dataSize_ + packet_header_size);
+        int transferredSendData = WriteSendBuffer(packet);
 		if (transferredSendData < 0) {
             if (transferredSendData == SOCKET_ERROR) {
                 printf("send failed with error: %d\n", WSAGetLastError());
@@ -336,14 +304,11 @@ void TcpClient::ProcessPacket(Packet* packet) {
 			Close(true);
 			return;
 		}
-		// OnSend(transferredSendData);
 	}
 	else if (packet->flag_ == 0x02) { // send as broadcast to all sessions
 		for (auto& client : TcpSessionManager.GetWholeClients()) {
 			if (client != NULL && client->IsValid()) {
-                int transferredSendData = client->EnqueueSendBuffer(
-                    reinterpret_cast<byte*>(packet),
-                    packet->dataSize_ + packet_header_size);
+                int transferredSendData = client->WriteSendBuffer(packet);
                 if (transferredSendData < 0) {
                     if (transferredSendData == SOCKET_ERROR) {
                         printf("send failed with error: %d\n", WSAGetLastError());
@@ -378,8 +343,13 @@ void TcpClient::OnSend(unsigned long transferred) {
 	m_pSendBuffer->ThrowAway(transferred);
 
     m_SendIoState = IO_CONNECTED;
+
+    // TODO: if error occurred during send, then the error code should pass to User
+    OnSend(static_cast<int>(0));
 }
 
+void TcpClient::OnSend(int _errorCode) {
+}
 
 //// private functions
 bool TcpClient::CreateBuffers(void) {
