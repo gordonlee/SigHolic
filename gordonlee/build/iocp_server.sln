@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.21005.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "core", "core\core.vcxproj", "{5283F5A4-29A6-40A3-90CD-E2C4346ED3EC}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "server", "server\server.vcxproj", "{AAC5E77A-D75A-4304-8ED3-6D9FA23B750E}"
+	ProjectSection(ProjectDependencies) = postProject
+		{5283F5A4-29A6-40A3-90CD-E2C4346ED3EC} = {5283F5A4-29A6-40A3-90CD-E2C4346ED3EC}
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5283F5A4-29A6-40A3-90CD-E2C4346ED3EC}.Debug|Win32.ActiveCfg = Debug|Win32
+		{5283F5A4-29A6-40A3-90CD-E2C4346ED3EC}.Debug|Win32.Build.0 = Debug|Win32
+		{5283F5A4-29A6-40A3-90CD-E2C4346ED3EC}.Release|Win32.ActiveCfg = Release|Win32
+		{5283F5A4-29A6-40A3-90CD-E2C4346ED3EC}.Release|Win32.Build.0 = Release|Win32
+		{AAC5E77A-D75A-4304-8ED3-6D9FA23B750E}.Debug|Win32.ActiveCfg = Debug|Win32
+		{AAC5E77A-D75A-4304-8ED3-6D9FA23B750E}.Debug|Win32.Build.0 = Debug|Win32
+		{AAC5E77A-D75A-4304-8ED3-6D9FA23B750E}.Release|Win32.ActiveCfg = Release|Win32
+		{AAC5E77A-D75A-4304-8ED3-6D9FA23B750E}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

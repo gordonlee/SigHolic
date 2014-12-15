@@ -1,0 +1,30 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="utility">
+      <UniqueIdentifier>{d0260f11-aca1-491d-ab99-3d3dce396fd7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="core_header">
+      <UniqueIdentifier>{4c8ddaef-3d91-4fb6-8cad-5c021147abc4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="network">
+      <UniqueIdentifier>{fefc3ef4-13a7-42f3-81ec-937338e1ac1a}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\src\utility\scoped_lock.h">
+      <Filter>utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\core_header\base_header.h">
+      <Filter>core_header</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\core_header\network_interface.h">
+      <Filter>network</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\src\utility\scoped_lcok.cpp">
+      <Filter>utility</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>
