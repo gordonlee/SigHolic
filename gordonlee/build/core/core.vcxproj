@@ -69,11 +69,21 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\core_header\base_header.h" />
-    <ClInclude Include="..\..\src\core_header\network_interface.h" />
+    <ClInclude Include="..\..\src\network\iocp_binder.h" />
+    <ClInclude Include="..\..\src\network\iocp_structure.h" />
+    <ClInclude Include="..\..\src\network\network_interface.h" />
+    <ClInclude Include="..\..\src\network\tcp_server.h" />
+    <ClInclude Include="..\..\src\network\tcp_client.h" />
+    <ClInclude Include="..\..\src\network\tcp_session_manager.h" />
+    <ClInclude Include="..\..\src\network\tcp_session_pool.h" />
+    <ClInclude Include="..\..\src\utility\job_processor.h" />
+    <ClInclude Include="..\..\src\utility\scheduler.h" />
     <ClInclude Include="..\..\src\utility\scoped_lock.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\utility\scoped_lcok.cpp" />
+    <ClCompile Include="..\..\src\network\tcp_client.cpp" />
+    <ClCompile Include="..\..\src\network\tcp_session_manager.cpp" />
+    <ClCompile Include="..\..\src\utility\scoped_lock.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

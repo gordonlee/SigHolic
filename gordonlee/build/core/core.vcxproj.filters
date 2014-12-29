@@ -18,13 +18,43 @@
     <ClInclude Include="..\..\src\core_header\base_header.h">
       <Filter>core_header</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\src\core_header\network_interface.h">
+    <ClInclude Include="..\..\src\network\network_interface.h">
+      <Filter>network</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\network\iocp_structure.h">
+      <Filter>network</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\network\iocp_binder.h">
+      <Filter>network</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\network\tcp_server.h">
+      <Filter>network</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\utility\scheduler.h">
+      <Filter>utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\utility\job_processor.h">
+      <Filter>utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\network\tcp_session_manager.h">
+      <Filter>network</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\network\tcp_session_pool.h">
+      <Filter>network</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\network\tcp_client.h">
       <Filter>network</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\utility\scoped_lcok.cpp">
+    <ClCompile Include="..\..\src\network\tcp_session_manager.cpp">
+      <Filter>network</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\utility\scoped_lock.cpp">
       <Filter>utility</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\network\tcp_client.cpp">
+      <Filter>network</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

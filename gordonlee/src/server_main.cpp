@@ -1,16 +1,18 @@
 
 #include <iostream>
-#include "utility\scoped_lock.h"
+#include <list>
+
+#include "network\network_interface.h"
 
 int main() {
 
     // create network class
+    INetwork* network_object = new Network();
+    network_object->Initialize(IOModel::DEFAULT);
+    
+    ::WaitForSingleObject(network_object->get_thread_handle(), INFINITE);
 
-    // setting up server config 
-
-    // server->start( listen_port, OnAcceptEventCallback )
-
-    // regist new client session
+    network_object->Clean();
 
     return 0;
 }
