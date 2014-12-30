@@ -58,6 +58,9 @@ class Network : public INetwork {
      }
 
      void InternalRun() {
+         TcpClient* client= SetupAcceptableClient();
+
+         // TcpSessionManager.AddTcpClient(client);
          while (IsRunning()) {
              Run();
          }
@@ -70,9 +73,7 @@ class Network : public INetwork {
      virtual void Run() {
          // watch session count.
          // if network module judges to need new clients, then regist new client session.
-         std::shared_ptr<TcpClient> client = SetupAcceptableClient();
-
-         TcpSessionManager.AddTcpClient(client);
+        
      }
 
      virtual void Clean() {
@@ -93,17 +94,18 @@ class Network : public INetwork {
 
  private:
 
-     std::shared_ptr<TcpClient> SetupAcceptableClient(void) {
+     TcpClient* SetupAcceptableClient(void) {
          // std::shared_ptr<TcpClient> client = std::shared_ptr<TcpClient>(new TcpClient());
          TcpClient* client = new TcpClient();
+         
+        // change status
+         iocp_.Register((HANDLE)server_->socket(), (DWORD)client);
+         
          // bind iocp
          server_->AcceptEx(client);
 
-         // change status
-         iocp_.Register((HANDLE)server_->socket(), (DWORD)client);
-
          // etc..
-         return std::shared_ptr<TcpClient>(client);
+         return (client);
      }
       
 
@@ -146,5 +148,17 @@ unsigned int __stdcall WorkerThread(LPVOID arg)
             (PULONG_PTR)&client,
             (LPOVERLAPPED *)(&overlapped),
             INFINITE);
+
+        // TODO: write down for accepted client.
+        if (retval != 1 || client == NULL) {
+            // error
+        }
+
+        else if (client->accept_overlapped() == overlapped) {
+            // on accept
+            printf("accpeted!\n");
+            client->OnAccept();
+        }
+        
     }
 }

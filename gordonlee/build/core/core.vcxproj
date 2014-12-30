@@ -82,7 +82,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\network\tcp_client.cpp" />
+    <ClCompile Include="..\..\src\network\tcp_server.cpp" />
     <ClCompile Include="..\..\src\network\tcp_session_manager.cpp" />
+    <ClCompile Include="..\..\src\network\tcp_session_pool.cpp" />
     <ClCompile Include="..\..\src\utility\scoped_lock.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -56,5 +56,11 @@
     <ClCompile Include="..\..\src\network\tcp_client.cpp">
       <Filter>network</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\network\tcp_server.cpp">
+      <Filter>network</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\network\tcp_session_pool.cpp">
+      <Filter>network</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

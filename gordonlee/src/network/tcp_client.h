@@ -22,6 +22,7 @@ class TcpClient : public ITcpClient {
      // MEMO: Regular Functions
      TcpClient(void);
      virtual ~TcpClient(void);
+     void OnAccept();
 
  public:	
      // MEMO: Accessors and Mutators (getter/setter)
