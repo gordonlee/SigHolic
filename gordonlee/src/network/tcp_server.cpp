@@ -42,22 +42,25 @@ bool TcpServer::Start() {
     if (Listen() == false) {
         return false;
     }
+
     return true;
 }
 
 bool TcpServer::AcceptEx(TcpClient* _client) {
-    char temp_buffer[1024] = { 0, };
+    
+    // setsockopt(_client->socket(), SOL_SOCKET, SO_UPDATE_ACCEPT_CONTEXT,
+    //    (char *)&socket_, sizeof(socket_));
+
     DWORD recv_data_length = 0, local_addr_length = sizeof(sockaddr_in)+16, remote_addr_length = sizeof(sockaddr_in)+16;
-    DWORD out_recv_bytes = 0;
 
     BOOL async_accept_result = ::AcceptEx(
         socket_,
         _client->socket(),
-        temp_buffer,
+        _client->accept_buffer(),
         recv_data_length,
         local_addr_length,
         remote_addr_length,
-        &out_recv_bytes,
+        _client->accept_bytes(),
         _client->accept_overlapped()
         );
 
