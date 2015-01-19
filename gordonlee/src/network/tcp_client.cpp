@@ -1,6 +1,7 @@
 #include "tcp_client.h"
 
 #include <Mswsock.h>
+#include <Ws2tcpip.h>
 
 namespace
 {
@@ -24,9 +25,11 @@ TcpClient::~TcpClient(void) {
     }
 }
 
+// TODO: The function should support not only AcceptEx version, but also accept version too.
+///		Now, it supports only AcceptEx version.
 void TcpClient::OnAccept() {
 
-    DWORD recv_data_length = 0, local_addr_length = sizeof(sockaddr_in)+16, remote_addr_length = sizeof(sockaddr_in)+16;
+    DWORD local_addr_length = sizeof(sockaddr_in)+16, remote_addr_length = sizeof(sockaddr_in)+16;
 
     int out_local_addr_length = 0, out_remote_addr_length = 0;
 
@@ -43,21 +46,15 @@ void TcpClient::OnAccept() {
         (SOCKADDR**)&remote_addr, 
         &out_remote_addr_length);
 
-    /*
-    int addr_len = sizeof(socket_addr_);
-    int result = ::getpeername(socket_, (SOCKADDR*)&socket_addr_, &addr_len);
-    if (result != 0) {
-        // fail
-        int was_error = ::WSAGetLastError();
-        printf("%d\n", was_error);
-    }
-    else {
-        printf("[TCP 서버] 클라이언트 종료: IP 주소=%s, 포트 번호=%d\n",
-            inet_ntoa(socket_addr_.sin_addr), ntohs(socket_addr_.sin_port));
+	::memcpy(&local_addr_, local_addr, out_local_addr_length);
+	::memcpy(&remote_addr_, remote_addr, out_remote_addr_length);
 
-        status_ = CONNECTED;
-    }
-    */
-    status_ = CONNECTED;
+	char test_buffer[16] = { 0, };
+	inet_ntop(AF_INET, &(remote_addr_.sin_addr), test_buffer, 16);
+
+	printf("[TCP Server] Client Accepted: IP=%s, Port=%d\n",
+		test_buffer, ntohs(remote_addr_.sin_port));
+	
+	status_ = CONNECTED;
 }
 
