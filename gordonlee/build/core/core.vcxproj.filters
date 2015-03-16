@@ -45,6 +45,9 @@
     <ClInclude Include="..\..\src\network\tcp_client.h">
       <Filter>network</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\src\utility\pulled_buffer.h">
+      <Filter>utility</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\network\tcp_session_manager.cpp">

@@ -3,17 +3,26 @@
 #include <Mswsock.h>
 #include <Ws2tcpip.h>
 
+#include "utility\pulled_buffer.h"
+
 namespace
 {
 
 }
 
-TcpClient::TcpClient(void) {
+TcpClient::TcpClient(void)
+: is_receiving_(false)
+, receive_bytes_(0) {
 
     ::memset(accept_buffer_, 0, 1024);
 
     accept_overlapped_ = new OverlappedIO();
     accept_overlapped_->set_session(std::shared_ptr<TcpClient>(this));
+
+	receive_overlapped_ = new OverlappedIO();
+	receive_overlapped_->set_session(std::shared_ptr<TcpClient>(this));
+
+	receive_buffer_ = new PulledBuffer();
 
     socket_ = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 }
@@ -23,6 +32,12 @@ TcpClient::~TcpClient(void) {
         delete accept_overlapped_;
         accept_overlapped_ = NULL;
     }
+
+	if (receive_buffer_)
+	{
+		delete receive_buffer_;
+		receive_buffer_ = NULL;
+	}
 }
 
 // TODO: The function should support not only AcceptEx version, but also accept version too.
@@ -58,3 +73,50 @@ void TcpClient::OnAccept() {
 	status_ = CONNECTED;
 }
 
+int TcpClient::ReceiveAsync(void) {
+	if ( is_receiving_ ) {
+		printf("RecvAsync.m_RecvIoState is not IO_CONNECTED. Check threading synchronization.\n");
+	}
+
+	is_receiving_ = true;
+
+	DWORD recvBytes;
+	DWORD flags = 0;
+
+	WSABUF wsaBuf;
+	wsaBuf.buf = receive_buffer_->GetEmptyPtr();
+	wsaBuf.len = receive_buffer_->GetEmptyLength();
+
+	receive_overlapped_->Reset();
+
+	int result = ::WSARecv(
+		socket_,
+		&wsaBuf,
+		1,
+		&recvBytes,
+		&flags,
+		receive_overlapped_,
+		NULL);
+
+	if (result == SOCKET_ERROR){
+		int error_code = WSAGetLastError();
+		if (error_code != ERROR_IO_PENDING) {
+			return error_code;
+		}
+	}
+	return 0;
+}
+
+void TcpClient::OnReceived(unsigned long transferred) {
+	
+	receive_bytes_ += transferred;
+	receive_buffer_->ForceAddLength(transferred);
+
+	is_receiving_ = false;
+
+	TryProcessPacket();
+}
+
+void TcpClient::TryProcessPacket(void) {
+	throw;
+}
